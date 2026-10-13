@@ -1,0 +1,15 @@
+---
+- name: Install prerequisites
+  ansible.builtin.import_playbook: playbooks/010-prerequisites.yaml
+
+- name: Install rke2 on first control plane node
+  ansible.builtin.import_playbook: playbooks/020-install-first-rke2.yaml
+
+- name: Join other rke2 control plane nodes
+  ansible.builtin.import_playbook: playbooks/030-join-rke2-control-plane-nodes.yaml
+
+- name: Join rke2 worker nodes
+  ansible.builtin.import_playbook: playbooks/040-join-rke2-worker-nodes.yaml
+
+- name: Install rancher
+  ansible.builtin.import_playbook: playbooks/050-install-rancher.yaml

@@ -1,0 +1,43 @@
+- name: Install rke2 on first node
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Create rke2 config file
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          token: {{ rke2_shared_token }}
+          tls-san:
+            - {{ kube_vip }}
+            - {{ public_lb_fqdn }}
+          node-ip: {{ hostvars[groups['control_plane'][0]].private_ip }}
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+    
+    - name: Install rke2
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="{{ rke2_version }}" sh -
+        creates: /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Enable rke2 service
+      ansible.builtin.systemd:
+        state: started
+        name: rke2-server
+        daemon_reload: true
+        enabled: true
+
+    - name: Get nodes
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get nodes --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+      register: get_nodes
+      changed_when: false
+
+    - name: Print nodes
+      ansible.builtin.debug:
+        msg: "{{ get_nodes.stdout_lines }}"
+      changed_when: false

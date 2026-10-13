@@ -1,0 +1,35 @@
+"all":
+  "children":
+    "control_plane":
+      "hosts":
+        "rancher-vm-0":
+          "ansible_host": "127.0.0.1"
+          "ansible_port": 50022
+          "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          "ansible_user": "testadmin"
+          "private_ip": "10.0.2.8"
+        "rancher-vm-1":
+          "ansible_host": "127.0.0.1"
+          "ansible_port": 50023
+          "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          "ansible_user": "testadmin"
+          "private_ip": "10.0.2.7"
+        "rancher-vm-2":
+          "ansible_host": "127.0.0.1"
+          "ansible_port": 50024
+          "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          "ansible_user": "testadmin"
+          "private_ip": "10.0.2.6"
+    "workers":
+      "hosts":
+        "rancher-vm-3":
+          "ansible_host": "127.0.0.1"
+          "ansible_port": 50025
+          "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          "ansible_user": "testadmin"
+          "private_ip": "10.0.2.5"
+  "vars":
+    "kube_vip": "10.0.2.4"
+    "public_lb_fqdn": "rancher3451342.eastus.cloudapp.azure.com"
+    "rke2_shared_token": "my_shared_token"
+    "rke2_version": "v1.36.4+rke2r1"
