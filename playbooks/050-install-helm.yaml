@@ -1,0 +1,25 @@
+- name: Install helm
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Download helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz
+        checksum: sha256:https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz.sha256sum
+        dest: /opt
+
+    - name: Extract helm archive
+      ansible.builtin.unarchive:
+        src: /opt/helm-v4.3.0-linux-amd64.tar.gz
+        dest: /opt
+        remote_src: yes
+    
+    - name: Copy helm binary
+      ansible.builtin.copy:
+        src: /opt/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true

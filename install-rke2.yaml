@@ -10,6 +10,3 @@
 
 - name: Join rke2 worker nodes
   ansible.builtin.import_playbook: playbooks/040-join-rke2-worker-nodes.yaml
-
-- name: Install rancher
-  ansible.builtin.import_playbook: playbooks/050-install-rancher.yaml

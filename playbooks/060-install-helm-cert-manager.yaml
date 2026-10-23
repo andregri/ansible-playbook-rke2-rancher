@@ -1,0 +1,48 @@
+- name: Install cert-manager helm chart
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Get nodes
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get nodes --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+      register: get_nodes
+      changed_when: false
+
+    - name: Print nodes
+      ansible.builtin.debug:
+        msg: "{{ get_nodes.stdout_lines }}"
+      changed_when: false
+
+    - name: Add jetstack helm repo
+      ansible.builtin.shell:
+        cmd: helm repo add jetstack https://charts.jetstack.io
+      become: true
+
+    - name: Update helm repo
+      ansible.builtin.shell:
+        cmd: helm repo update
+      become: true
+
+    - name: Install cert-manager helm chart
+      ansible.builtin.shell:
+        cmd: |
+          helm upgrade --install cert-manager jetstack/cert-manager \
+          --namespace cert-manager \
+          --create-namespace \
+          --set crds.enabled=true \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Get pod and svc
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get po,svc -A --kubeconfig /etc/rancher/rke2/rke2.yaml
+      register: kubectl_get_po_cmd
+      become: true
+      changed_when: false
+    
+    - name: Print kubectl get output
+      ansible.builtin.debug:
+        msg: "{{ kubectl_get_po_cmd.stdout_lines }}"
+      changed_when: false

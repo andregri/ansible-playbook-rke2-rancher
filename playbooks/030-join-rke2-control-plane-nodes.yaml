@@ -11,7 +11,7 @@
           server: https://{{ kube_vip }}:9345
           tls-san:
             - {{ kube_vip }}
-            - {{ public_lb_fqdn }}
+            - {{ rancher_hostname }}
         owner: root
         group: root
         mode: '0644'

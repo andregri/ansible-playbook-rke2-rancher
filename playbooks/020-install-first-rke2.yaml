@@ -10,7 +10,7 @@
           token: {{ rke2_shared_token }}
           tls-san:
             - {{ kube_vip }}
-            - {{ public_lb_fqdn }}
+            - {{ rancher_hostname }}
           node-ip: {{ hostvars[groups['control_plane'][0]].private_ip }}
         owner: root
         group: root

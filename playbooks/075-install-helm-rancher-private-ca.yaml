@@ -1,0 +1,116 @@
+- name: Install rancher helm chart with private CA
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Copy intermediate CA cert on the host
+      ansible.builtin.copy:
+        src: "{{ intermediate_ca_chain }}"
+        dest: /etc/rancher/rke2/cacert.pem
+        mode: '0644'
+
+    - name: Copy intermediate CA key on the host
+      ansible.builtin.copy:
+        src: "{{ intermediate_ca_key }}"
+        dest: /etc/rancher/rke2/cacert.key
+        mode: '0600'
+
+    - name: Create kubernetes secret for intermediate CA
+      ansible.builtin.shell:
+        cmd: |
+          /var/lib/rancher/rke2/bin/kubectl create secret tls intermediate-ca \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml \
+          --cert="/etc/rancher/rke2/cacert.pem" \
+          --key="/etc/rancher/rke2/cacert.key" \
+          -n cert-manager \
+          --dry-run=client -o yaml | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
+
+    - name: Create a ClusterIssuer
+      ansible.builtin.shell:
+        cmd: |
+          cat <<EOF | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: rancher-ca-issuer
+            namespace: cert-manager
+          spec:
+            ca:
+              secretName: intermediate-ca
+          EOF
+
+    - name: Create namespace cattle-system
+      ansible.builtin.shell:
+        cmd: |
+          /var/lib/rancher/rke2/bin/kubectl create ns cattle-system \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml \
+          --dry-run=client -o yaml | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
+
+    - name: Issue a certificate for rancher
+      ansible.builtin.shell:
+        cmd: |
+          cat <<EOF | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
+          apiVersion: cert-manager.io/v1
+          kind: Certificate
+          metadata:
+            name: rancher-tls
+            namespace: cattle-system
+          spec:
+            secretName: tls-rancher-ingress
+            issuerRef:
+              name: rancher-ca-issuer
+              kind: ClusterIssuer
+            dnsNames:
+              - {{ rancher_hostname }}
+            usages:
+              - digital signature
+              - key encipherment
+              - server auth
+          EOF
+
+    - name: Wait for certificate to be ready
+      ansible.builtin.shell:
+        cmd: |
+          /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml wait -n cattle-system \
+          --for=condition=Ready certificate/rancher-tls \
+          --timeout=120s
+      changed_when: false
+
+    - name: Create rancher CA bundle
+      ansible.builtin.shell:
+        cmd: |
+          /var/lib/rancher/rke2/bin/kubectl create secret generic tls-ca \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml \
+          --from-file=/etc/rancher/rke2/cacert.pem \
+          -n cattle-system \
+          --dry-run=client -o yaml | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
+
+    - name: Add Rancher helm repo
+      ansible.builtin.shell:
+        cmd: helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+      become: true
+
+    - name: Install rancher helm chart
+      ansible.builtin.shell:
+        cmd: |
+          helm upgrade --install rancher rancher-stable/rancher \
+          --namespace cattle-system \
+          --create-namespace \
+          --set hostname={{ rancher_hostname }} \
+          --set bootstrapPassword=admin \
+          --set ingress.tls.source=secret \
+          --set privateCA=true \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Get rancher pod and svc
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get po,svc -A --kubeconfig /etc/rancher/rke2/rke2.yaml
+      register: kubectl_get_po_cmd
+      become: true
+      changed_when: false
+    
+    - name: Print kubectl get output
+      ansible.builtin.debug:
+        msg: "{{ kubectl_get_po_cmd.stdout_lines }}"
+      changed_when: false

@@ -34,7 +34,7 @@ Sample inventory for 3 control plane nodes and 1 worker node:
           "private_ip": "10.0.2.5"
   "vars":
     "kube_vip": "10.0.2.4"
-    "public_lb_fqdn": "rancher3451342.eastus.cloudapp.azure.com"
+    "rancher_hostname": "rancher3451342.eastus.cloudapp.azure.com"
     "rke2_shared_token": "my_shared_token"
     "rke2_version": "v1.36.4+rke2r1"
 ```
