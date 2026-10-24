@@ -6,13 +6,13 @@
     - name: Copy intermediate CA cert on the host
       ansible.builtin.copy:
         src: "{{ intermediate_ca_chain }}"
-        dest: /etc/rancher/rke2/cacert.pem
+        dest: /etc/rancher/rke2/cacerts.pem
         mode: '0644'
 
     - name: Copy intermediate CA key on the host
       ansible.builtin.copy:
         src: "{{ intermediate_ca_key }}"
-        dest: /etc/rancher/rke2/cacert.key
+        dest: /etc/rancher/rke2/cacerts.key
         mode: '0600'
 
     - name: Create kubernetes secret for intermediate CA
@@ -20,8 +20,8 @@
         cmd: |
           /var/lib/rancher/rke2/bin/kubectl create secret tls intermediate-ca \
           --kubeconfig /etc/rancher/rke2/rke2.yaml \
-          --cert="/etc/rancher/rke2/cacert.pem" \
-          --key="/etc/rancher/rke2/cacert.key" \
+          --cert="/etc/rancher/rke2/cacerts.pem" \
+          --key="/etc/rancher/rke2/cacerts.key" \
           -n cert-manager \
           --dry-run=client -o yaml | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
 
@@ -81,7 +81,7 @@
         cmd: |
           /var/lib/rancher/rke2/bin/kubectl create secret generic tls-ca \
           --kubeconfig /etc/rancher/rke2/rke2.yaml \
-          --from-file=/etc/rancher/rke2/cacert.pem \
+          --from-file=/etc/rancher/rke2/cacerts.pem \
           -n cattle-system \
           --dry-run=client -o yaml | /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f -
 
