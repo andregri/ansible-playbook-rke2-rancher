@@ -30,7 +30,7 @@
 
   - name: Copy server upgrade plan
     ansible.builtin.copy:
-      src: manifests/upgrade-server-plan.yaml
+      src: files/upgrade-server-plan.yaml
       dest: /etc/rancher/rke2/upgrade-server-plan.yaml
       mode: '0666'
     become: true
