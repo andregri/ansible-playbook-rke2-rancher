@@ -1,0 +1,41 @@
+- name: Install system-upgrade-controller for automatic upgrades
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+  - name: Install system-upgrade-controller crds and controller
+    ansible.builtin.shell:
+      cmd: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply \
+        -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml \
+        -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml
+
+  - name: Wait for deployment/system-upgrade-controller
+    ansible.builtin.shell:
+      cmd: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply \
+        rollout status deployment/system-upgrade-controller -n system-upgrade
+  
+  - name: Get system-upgrade pods
+    ansible.builtin.shell:
+      cmd: /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get po -n system-upgrade
+    register: kubectl_get_po_cmd
+    become: true
+    changed_when: false
+  
+  - name: Get system-upgrade pods
+    ansible.builtin.debug:
+      msg: "{{ kubectl_get_po_cmd.stdout_lines }}"
+    changed_when: false
+
+  - name: Copy server upgrade plan
+    ansible.builtin.copy:
+      src: manifests/upgrade-server-plan.yaml
+      dest: /etc/rancher/rke2/upgrade-server-plan.yaml
+      mode: '0666'
+    become: true
+
+  - name: Apply upgrade plan for servers and agents
+    ansible.builtin.shell:
+      cmd: /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply -f /etc/rancher/rke2/upgrade-server-plan.yaml
+    become: true
