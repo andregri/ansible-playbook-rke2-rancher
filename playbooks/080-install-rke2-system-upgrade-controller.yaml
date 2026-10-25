@@ -13,8 +13,9 @@
   - name: Wait for deployment/system-upgrade-controller
     ansible.builtin.shell:
       cmd: |
-        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml apply \
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml \
         rollout status deployment/system-upgrade-controller -n system-upgrade
+    changed_when: false
   
   - name: Get system-upgrade pods
     ansible.builtin.shell:
