@@ -97,7 +97,7 @@
           --namespace cattle-system \
           --create-namespace \
           --set hostname={{ rancher_hostname }} \
-          --set bootstrapPassword=admin \
+          --set bootstrapPassword={{ rancher_bootstrap_password }} \
           --set ingress.tls.source=secret \
           --set privateCA=true \
           --kubeconfig /etc/rancher/rke2/rke2.yaml

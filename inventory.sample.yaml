@@ -7,29 +7,26 @@
           "ansible_port": 50022
           "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
           "ansible_user": "testadmin"
-          "private_ip": "10.0.2.8"
+          "private_ip": "10.0.2.6"
         "rancher-vm-1":
           "ansible_host": "127.0.0.1"
           "ansible_port": 50023
           "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
           "ansible_user": "testadmin"
-          "private_ip": "10.0.2.7"
+          "private_ip": "10.0.2.5"
         "rancher-vm-2":
           "ansible_host": "127.0.0.1"
           "ansible_port": 50024
           "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
           "ansible_user": "testadmin"
-          "private_ip": "10.0.2.6"
+          "private_ip": "10.0.2.7"
     "workers":
-      "hosts":
-        "rancher-vm-3":
-          "ansible_host": "127.0.0.1"
-          "ansible_port": 50025
-          "ansible_ssh_common_args": "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
-          "ansible_user": "testadmin"
-          "private_ip": "10.0.2.5"
+      "hosts": {}
   "vars":
+    "intermediate_ca_chain": "/path/to/cacerts.pem"
+    "intermediate_ca_key": "/path/to/intermediate-ca-key.pem"
     "kube_vip": "10.0.2.4"
-    "rancher_hostname": "rancher3451342.eastus.cloudapp.azure.com"
+    "rancher_bootstrap_password": "admin"
+    "rancher_hostname": "rancher.company.internal"
     "rke2_shared_token": "my_shared_token"
     "rke2_version": "v1.36.4+rke2r1"
