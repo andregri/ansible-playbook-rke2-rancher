@@ -1,5 +1,5 @@
 - name: Prerequisites
-  hosts: all
+  hosts: control_plane:workers
   gather_facts: yes
   become: true
   tasks:
@@ -8,3 +8,45 @@
         path: /etc/rancher/rke2
         state: directory
         recurse: yes
+
+    - name: Copy RKE2 binary archive to remote node
+      ansible.builtin.copy:
+        src: /tmp/rke2.linux-amd64.tar.gz
+        dest: /tmp/rke2.linux-amd64.tar.gz
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Extract RKE2 binary archive
+      ansible.builtin.unarchive:
+        src: /tmp/rke2.linux-amd64.tar.gz
+        dest: /usr/local/
+        remote_src: true
+        owner: root
+        group: root
+
+    - name: Ensure RKE2 binary is executable
+      ansible.builtin.file:
+        path: /usr/local/bin/rke2
+        owner: root
+        group: root
+        mode: "0755"
+        state: file
+
+    - name: Create /etc/rancher/rke2/registry.yaml file
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/registry.yaml
+        content: |
+          system-default-registry: {{ registry_url }}
+          mirrors:
+            {{ registry_url }}:
+              endpoint:
+                - https://{{ registry_url}}/v2
+          configs:
+            {{ registry_url }}:
+              auth:
+                username: {{ registry_username}}
+                password: {{ registry_password}}
+        owner: root
+        group: root
+        mode: '0644'

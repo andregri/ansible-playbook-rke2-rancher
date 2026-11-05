@@ -1,0 +1,9 @@
+---
+- name: Download RKE2 binary and images
+  ansible.builtin.import_playbook: airgapped-prereq/010-airgapped-download-images.yaml
+
+- name: Docker load RKE2 images locally
+  ansible.builtin.import_playbook: airgapped-prereq/020-airgapped-docker-load-rke2-images.yaml
+
+- name: Push RKE2 images to private registry
+  ansible.builtin.import_playbook: airgapped-prereq/030-airgapped-docker-push-rke2-images.yaml

@@ -1,0 +1,9 @@
+- name: Airgapped - docker load RKE2 images locally
+  hosts: localhost
+  become: false
+  tasks:
+    - name: Docker load images
+      ansible.builtin.shell:
+        cmd: "docker load -i /tmp/rke2-images.linux-amd64.tar.zst"
+      register: docker_load_result
+      failed_when: "'Loaded image' not in docker_load_result.stdout"

@@ -1,0 +1,65 @@
+
+---
+- name: Push RKE2 images to private registry
+  hosts: localhost
+  connection: local
+  become: false
+
+  vars:
+    rke2_image_archive: /tmp/rke2-images.linux-amd64.tar.zst
+
+  tasks:
+
+    # Extract the Docker archive manifest
+    - name: Extract RKE2 image manifest
+      ansible.builtin.command:
+        cmd: >-
+          tar --zstd -xOf
+          {{ rke2_image_archive }}
+          manifest.json
+      register: rke2_manifest
+      changed_when: false
+
+    # Parse image names from manifest.json
+    - name: Extract image names
+      ansible.builtin.set_fact:
+        rke2_images: >-
+          {{
+            rke2_manifest.stdout
+            | from_json
+            | map(attribute='RepoTags')
+            | select('defined')
+            | flatten
+            | reject('equalto', none)
+            | reject('equalto', '')
+            | unique
+            | list
+          }}
+
+    - name: Display images to push
+      ansible.builtin.debug:
+        var: rke2_images
+
+    # Tag images for the private registry
+    - name: Tag RKE2 images
+      ansible.builtin.command:
+        cmd: >-
+          docker tag {{ item }}
+          {{ registry_url }}/{{ item | regex_replace('^docker.io/', '') }}
+      loop: "{{ rke2_images }}"
+
+    # Docker login
+    - name: Docker login to private registry
+      ansible.builtin.command:
+        cmd: >-
+          docker login {{ registry_url }}
+          -u {{ registry_username }}
+          -p {{ registry_password }}
+
+    # Push only images from the RKE2 archive
+    - name: Push RKE2 images to private registry
+      ansible.builtin.command:
+        cmd: >-
+          docker push
+          {{ registry_url }}/{{ item | regex_replace('^docker.io/', '') }}
+      loop: "{{ rke2_images }}"

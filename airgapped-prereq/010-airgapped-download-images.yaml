@@ -1,0 +1,32 @@
+- name: Airgapped - download RKE2 images
+  hosts: localhost
+  become: false
+  tasks:
+    - name: Download RKE2 images
+      ansible.builtin.get_url:
+        url: https://github.com/rancher/rke2/releases/download/{{ rke2_version }}/rke2-images.linux-amd64.tar.zst
+        dest: /tmp/rke2-images.linux-amd64.tar.zst
+    
+    - name: Download RKE2 binary
+      ansible.builtin.get_url:
+        url: https://github.com/rancher/rke2/releases/download/{{ rke2_version }}/rke2.linux-amd64.tar.gz
+        dest: /tmp/rke2.linux-amd64.tar.gz
+    
+    - name: Download checksum file
+      ansible.builtin.get_url:
+        url: https://github.com/rancher/rke2/releases/download/{{ rke2_version }}/sha256sum-amd64.txt
+        dest: /tmp/sha256sum-amd64.txt
+    
+    - name: Verify RKE2 images checksum
+      ansible.builtin.shell:
+        cmd: "sha256sum -c sha256sum-amd64.txt | grep rke2-images.linux-amd64.tar.zst"
+        chdir: /tmp
+      register: checksum_result
+      failed_when: "'rke2-images.linux-amd64.tar.zst: OK' not in checksum_result.stdout"
+    
+    - name: Verify RKE2 binary checksum
+      ansible.builtin.shell:
+        cmd: "sha256sum -c sha256sum-amd64.txt | grep rke2.linux-amd64.tar.gz"
+        chdir: /tmp
+      register: checksum_result
+      failed_when: "'rke2.linux-amd64.tar.gz: OK' not in checksum_result.stdout"
