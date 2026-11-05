@@ -20,10 +20,17 @@
         cmd: helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
       become: true
 
+    - name: Helm login
+      ansible.builtin.shell:
+        cmd: helm registry login {{ registry_url }} -u {{ registry_username }} -p {{ registry_password }}
+      become: true
+
     - name: Install rancher helm chart
       ansible.builtin.shell:
         cmd: |
-          helm upgrade --install rancher rancher-stable/rancher \
+          helm upgrade --install rancher \
+          oci://{{ registry_url }}/helm/rancher \
+          --version {{ rancher_version }} \
           --namespace cattle-system \
           --create-namespace \
           --set hostname={{ rancher_hostname }} \

@@ -15,20 +15,27 @@
         msg: "{{ get_nodes.stdout_lines }}"
       changed_when: false
 
-    - name: Add jetstack helm repo
-      ansible.builtin.shell:
-        cmd: helm repo add jetstack https://charts.jetstack.io
-      become: true
+    # - name: Add jetstack helm repo
+    #   ansible.builtin.shell:
+    #     cmd: helm repo add jetstack https://charts.jetstack.io
+    #   become: true
 
-    - name: Update helm repo
-      ansible.builtin.shell:
-        cmd: helm repo update
-      become: true
+    # - name: Update helm repo
+    #   ansible.builtin.shell:
+    #     cmd: helm repo update
+    #   become: true
 
+    - name: Helm login
+      ansible.builtin.shell:
+        cmd: helm registry login {{ registry_url }} -u {{ registry_username }} -p {{ registry_password }}
+      become: true
+    
     - name: Install cert-manager helm chart
       ansible.builtin.shell:
         cmd: |
-          helm upgrade --install cert-manager jetstack/cert-manager \
+          helm upgrade --install cert-manager \
+          oci://{{ registry_url }}/helm/cert-manager \
+          --version {{ cert_manager_version }} \
           --namespace cert-manager \
           --create-namespace \
           --set crds.enabled=true \

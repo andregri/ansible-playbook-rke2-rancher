@@ -1,0 +1,97 @@
+
+---
+- name: Push RKE2 images to private registry
+  hosts: localhost
+  connection: local
+  become: false
+
+  vars:
+    registry_chart_path: "helm"
+
+    rancher_repository: "https://releases.rancher.com/server-charts/stable"
+
+    download_dir: "/tmp/helm-mirror"
+
+  tasks:
+    - name: Create download directory
+      ansible.builtin.file:
+        path: "{{ download_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Login to private OCI registry
+      ansible.builtin.command:
+        argv:
+          - helm
+          - registry
+          - login
+          - "{{ registry_url }}"
+          - --username
+          - "{{ registry_username }}"
+          - --password-stdin
+        stdin: "{{ registry_password }}"
+      no_log: true
+      changed_when: false
+
+    # CERT-MANAGER
+
+    - name: Pull cert-manager chart
+      ansible.builtin.command:
+        argv:
+          - helm
+          - pull
+          - oci://quay.io/jetstack/charts/cert-manager
+          - --version
+          - "{{ cert_manager_version }}"
+        chdir: "{{ download_dir }}"
+        creates: "{{ download_dir }}/cert-manager-{{ cert_manager_version }}.tgz"
+
+    - name: Push cert-manager chart to private registry
+      ansible.builtin.command:
+        argv:
+          - helm
+          - push
+          - "cert-manager-{{ cert_manager_version }}.tgz"
+          - "oci://{{ registry_url }}/{{ registry_chart_path }}"
+        chdir: "{{ download_dir }}"
+
+    # RANCHER
+
+    - name: Add official Rancher stable repository
+      ansible.builtin.command:
+        argv:
+          - helm
+          - repo
+          - add
+          - rancher-stable
+          - "{{ rancher_repository }}"
+          - --force-update
+      changed_when: false
+
+    - name: Update Helm repositories
+      ansible.builtin.command:
+        argv:
+          - helm
+          - repo
+          - update
+      changed_when: false
+
+    - name: Download Rancher chart
+      ansible.builtin.command:
+        argv:
+          - helm
+          - pull
+          - rancher-stable/rancher
+          - --version
+          - "{{ rancher_version }}"
+        chdir: "{{ download_dir }}"
+        creates: "{{ download_dir }}/rancher-{{ rancher_version }}.tgz"
+
+    - name: Push Rancher chart to private registry
+      ansible.builtin.command:
+        argv:
+          - helm
+          - push
+          - "rancher-{{ rancher_version }}.tgz"
+          - "oci://{{ registry_url }}/{{ registry_chart_path }}"
+        chdir: "{{ download_dir }}"
