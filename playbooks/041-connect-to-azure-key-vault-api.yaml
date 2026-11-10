@@ -1,0 +1,118 @@
+- name: Connect to Key Vault
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  tasks:
+
+  vars:
+    tenant_id: "{{ azure_tenant }}"
+    client_id: "{{ azure_client_id }}"
+    client_secret: "{{ azure_client_secret }}"
+
+    keyvault_name: "my-keyvault"
+    keyvault_url: "https://{{ keyvault_name }}.vault.azure.net"
+
+    secret_name: "my-application-password"
+
+    # Available operations: get / set
+    kv_action: "get"
+
+    # Secret value used for SET operation
+    new_secret_value: "{{ azure_new_secret | default('') }}"
+
+    api_version: "7.4"
+
+  tasks:
+
+    # --------------------------------------------------
+    # 1. Validate operation
+    # --------------------------------------------------
+
+    - name: Validate requested action
+      ansible.builtin.assert:
+        that:
+          - kv_action in ['get', 'set']
+          - secret_name | length > 0
+          - keyvault_name | length > 0
+          - kv_action != 'set' or new_secret_value | length > 0
+        fail_msg: "Invalid operation or missing secret value."
+
+    # --------------------------------------------------
+    # 2. Authenticate against Microsoft Entra ID
+    # --------------------------------------------------
+
+    - name: Request Azure access token
+      ansible.builtin.uri:
+        url: "https://login.microsoftonline.com/{{ tenant_id }}/oauth2/v2.0/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          client_id: "{{ client_id }}"
+          client_secret: "{{ client_secret }}"
+          scope: "https://vault.azure.net/.default"
+          grant_type: "client_credentials"
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+        return_content: true
+        status_code: 200
+      register: azure_auth
+      no_log: true
+
+    - name: Store Azure access token
+      ansible.builtin.set_fact:
+        azure_access_token: "{{ azure_auth.json.access_token }}"
+      no_log: true
+
+    # --------------------------------------------------
+    # 3. GET SECRET FROM AZURE KEY VAULT
+    # --------------------------------------------------
+
+    - name: Retrieve secret from Azure Key Vault
+      ansible.builtin.uri:
+        url: "{{ keyvault_url }}/secrets/{{ secret_name }}?api-version={{ api_version }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ azure_access_token }}"
+          Content-Type: application/json
+        return_content: true
+        status_code: 200
+      register: kv_get_result
+      when: kv_action == 'get'
+      no_log: true
+
+    - name: Store retrieved secret
+      ansible.builtin.set_fact:
+        retrieved_secret: "{{ kv_get_result.json.value }}"
+      when: kv_action == 'get'
+      no_log: true
+
+    # --------------------------------------------------
+    # 4. SET / UPDATE SECRET IN AZURE KEY VAULT
+    # --------------------------------------------------
+
+    - name: Create or update secret in Azure Key Vault
+      ansible.builtin.uri:
+        url: "{{ keyvault_url }}/secrets/{{ secret_name }}?api-version={{ api_version }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ azure_access_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          value: "{{ new_secret_value }}"
+        return_content: true
+        status_code:
+          - 200
+          - 201
+      register: kv_set_result
+      when: kv_action == 'set'
+      no_log: true
+
+    # --------------------------------------------------
+    # 5. Operation status
+    # --------------------------------------------------
+
+    - name: Display operation status
+      ansible.builtin.debug:
+        msg: "Azure Key Vault {{ kv_action }} operation completed successfully."
+
+  

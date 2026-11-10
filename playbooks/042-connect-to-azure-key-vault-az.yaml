@@ -1,0 +1,68 @@
+# ansible-galaxy collection install azure.azcollection
+# pip install -r ~/.ansible/collections/ansible_collections/azure/azcollection/requirements.txt
+---
+- name: Manage Azure Key Vault secrets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_uri: "https://YOUR-KEYVAULT.vault.azure.net/"
+    secret_name: "my-application-password"
+
+    # Supported operations: get / set
+    kv_action: "get"
+
+    # Used only for the SET operation
+    new_secret_value: "{{ kv_new_secret | default('') }}"
+
+  environment:
+    AZURE_CLIENT_ID: "{{ azure_client_id }}"
+    AZURE_SECRET: "{{ azure_client_secret }}"
+    AZURE_TENANT: "{{ azure_tenant }}"
+    AZURE_SUBSCRIPTION_ID: "{{ azure_subscription_id }}"
+
+  tasks:
+
+    - name: Validate requested operation
+      ansible.builtin.assert:
+        that:
+          - kv_action in ['get', 'set']
+        fail_msg: "kv_action must be get or set"
+
+    # ==========================================
+    # GET SECRET FROM AZURE KEY VAULT
+    # ==========================================
+
+    - name: Retrieve secret from Key Vault
+      azure.azcollection.azure_rm_keyvaultsecret_info:
+        vault_uri: "{{ vault_uri }}"
+        name: "{{ secret_name }}"
+      register: kv_secret_result
+      when: kv_action == "get"
+      no_log: true
+
+    - name: Make retrieved secret available
+      ansible.builtin.set_fact:
+        retrieved_secret: "{{ kv_secret_result.secrets[0].secret }}"
+      when:
+        - kv_action == "get"
+        - kv_secret_result.secrets | length > 0
+      no_log: true
+
+    # ==========================================
+    # SET / UPDATE SECRET IN AZURE KEY VAULT
+    # ==========================================
+
+    - name: Create or update secret in Key Vault
+      azure.azcollection.azure_rm_keyvaultsecret:
+        secret_name: "{{ secret_name }}"
+        secret_value: "{{ new_secret_value }}"
+        keyvault_uri: "{{ vault_uri }}"
+        state: present
+      when: kv_action == "set"
+      no_log: true
+
+    - name: Display operation status
+      ansible.builtin.debug:
+        msg: "Azure Key Vault operation completed."
