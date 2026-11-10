@@ -2,9 +2,6 @@
 - name: Install rke2
   ansible.builtin.import_playbook: install-rke2.yaml
 
-- name: Install helm
-  ansible.builtin.import_playbook: playbooks/050-install-helm.yaml
-
 - name: Install cert-manager helm chart
   ansible.builtin.import_playbook: playbooks/060-install-helm-cert-manager.yaml
 
