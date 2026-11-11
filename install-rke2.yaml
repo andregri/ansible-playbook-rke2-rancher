@@ -11,5 +11,8 @@
 - name: Join rke2 worker nodes
   ansible.builtin.import_playbook: playbooks/040-join-rke2-worker-nodes.yaml
 
+- name: Install helm
+  ansible.builtin.import_playbook: playbooks/043-install-helm.yaml
+
 - name: Install helm chart fluxcd-operator
   ansible.builtin.import_playbook: playbooks/050-install-helm-fluxcd-operator.yaml
