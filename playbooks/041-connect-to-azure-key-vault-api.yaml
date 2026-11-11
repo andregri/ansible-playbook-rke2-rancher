@@ -1,43 +1,14 @@
 - name: Connect to Key Vault
   hosts: "{{ groups['control_plane'][0] }}"
   gather_facts: yes
-  tasks:
 
   vars:
-    tenant_id: "{{ azure_tenant }}"
-    client_id: "{{ azure_client_id }}"
-    client_secret: "{{ azure_client_secret }}"
-
-    keyvault_name: "my-keyvault"
     keyvault_url: "https://{{ keyvault_name }}.vault.azure.net"
-
-    secret_name: "my-application-password"
-
-    # Available operations: get / set
-    kv_action: "get"
-
-    # Secret value used for SET operation
-    new_secret_value: "{{ azure_new_secret | default('') }}"
-
     api_version: "7.4"
 
   tasks:
-
     # --------------------------------------------------
-    # 1. Validate operation
-    # --------------------------------------------------
-
-    - name: Validate requested action
-      ansible.builtin.assert:
-        that:
-          - kv_action in ['get', 'set']
-          - secret_name | length > 0
-          - keyvault_name | length > 0
-          - kv_action != 'set' or new_secret_value | length > 0
-        fail_msg: "Invalid operation or missing secret value."
-
-    # --------------------------------------------------
-    # 2. Authenticate against Microsoft Entra ID
+    # 1. Authenticate against Microsoft Entra ID
     # --------------------------------------------------
 
     - name: Request Azure access token
@@ -63,12 +34,12 @@
       no_log: true
 
     # --------------------------------------------------
-    # 3. GET SECRET FROM AZURE KEY VAULT
+    # 2. GET SECRET FROM AZURE KEY VAULT
     # --------------------------------------------------
 
-    - name: Retrieve secret from Azure Key Vault
+    - name: Retrieve flux-git-token secret from Azure Key Vault
       ansible.builtin.uri:
-        url: "{{ keyvault_url }}/secrets/{{ secret_name }}?api-version={{ api_version }}"
+        url: "{{ keyvault_url }}/secrets/flux-git-token?api-version={{ api_version }}"
         method: GET
         headers:
           Authorization: "Bearer {{ azure_access_token }}"
@@ -76,43 +47,77 @@
         return_content: true
         status_code: 200
       register: kv_get_result
-      when: kv_action == 'get'
       no_log: true
-
+    
     - name: Store retrieved secret
       ansible.builtin.set_fact:
-        retrieved_secret: "{{ kv_get_result.json.value }}"
-      when: kv_action == 'get'
+        flux_git_token: "{{ kv_get_result.json.value }}"
+      no_log: true
+
+    ### ---
+
+    - name: Retrieve registry-username secret from Azure Key Vault
+      ansible.builtin.uri:
+        url: "{{ keyvault_url }}/secrets/registry-username?api-version={{ api_version }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ azure_access_token }}"
+          Content-Type: application/json
+        return_content: true
+        status_code: 200
+      register: kv_get_result
+      no_log: true
+    
+    - name: Store retrieved secret
+      ansible.builtin.set_fact:
+        registry_username: "{{ kv_get_result.json.value }}"
+      no_log: true
+
+    ### ---
+
+    - name: Retrieve registry-password secret from Azure Key Vault
+      ansible.builtin.uri:
+        url: "{{ keyvault_url }}/secrets/registry-password?api-version={{ api_version }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ azure_access_token }}"
+          Content-Type: application/json
+        return_content: true
+        status_code: 200
+      register: kv_get_result
+      no_log: true
+    
+    - name: Store retrieved secret
+      ansible.builtin.set_fact:
+        registry_password: "{{ kv_get_result.json.value }}"
       no_log: true
 
     # --------------------------------------------------
-    # 4. SET / UPDATE SECRET IN AZURE KEY VAULT
+    # 3. SET / UPDATE SECRET IN AZURE KEY VAULT
     # --------------------------------------------------
 
-    - name: Create or update secret in Azure Key Vault
+    # Read RKE2 kubeconfig
+    - name: Read RKE2 kubeconfig
+      ansible.builtin.slurp:
+        src: /etc/rancher/rke2/rke2.yaml
+      register: rke2_kubeconfig
+      no_log: true
+      become: true
+
+    # Store kubeconfig in Azure Key Vault
+    - name: Create or update RKE2 kubeconfig in Azure Key Vault
       ansible.builtin.uri:
-        url: "{{ keyvault_url }}/secrets/{{ secret_name }}?api-version={{ api_version }}"
+        url: "{{ keyvault_url }}/secrets/rke2-kubeconfig?api-version={{ api_version }}"
         method: PUT
         headers:
           Authorization: "Bearer {{ azure_access_token }}"
           Content-Type: application/json
         body_format: json
         body:
-          value: "{{ new_secret_value }}"
+          value: "{{ rke2_kubeconfig.content | b64decode }}"
         return_content: true
         status_code:
           - 200
           - 201
       register: kv_set_result
-      when: kv_action == 'set'
       no_log: true
-
-    # --------------------------------------------------
-    # 5. Operation status
-    # --------------------------------------------------
-
-    - name: Display operation status
-      ansible.builtin.debug:
-        msg: "Azure Key Vault {{ kv_action }} operation completed successfully."
-
-  
