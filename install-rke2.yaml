@@ -1,6 +1,6 @@
 ---
 - name: Connect to Azure Key Vault API
-  ansible.builtin.import_playbook: playbooks/005-connect-to-azure-key-vault-api.yaml
+  ansible.builtin.import_playbook: playbooks/005-get-secrets-from-kv.yaml
 
 - name: Install prerequisites
   ansible.builtin.import_playbook: playbooks/010-prerequisites.yaml
@@ -13,6 +13,9 @@
 
 - name: Join rke2 worker nodes
   ansible.builtin.import_playbook: playbooks/040-join-rke2-worker-nodes.yaml
+
+- name: Connect to Azure Key Vault API
+  ansible.builtin.import_playbook: playbooks/042-store-kubeconfig-to-kv.yaml
 
 - name: Install helm
   ansible.builtin.import_playbook: playbooks/043-install-helm.yaml
