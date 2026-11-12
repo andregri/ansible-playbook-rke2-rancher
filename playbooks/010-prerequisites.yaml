@@ -42,6 +42,8 @@
             {{ registry_url }}:
               endpoint:
                 - https://{{ registry_url}}/v2
+              rewrite:
+                "^rancher/(.*)": "{{ registry_rke2_images_path }}/$1"
           configs:
             {{ registry_url }}:
               auth:

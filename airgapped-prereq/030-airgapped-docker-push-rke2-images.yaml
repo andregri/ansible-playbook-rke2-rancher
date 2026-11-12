@@ -46,7 +46,7 @@
       ansible.builtin.command:
         cmd: >-
           docker tag {{ item }}
-          {{ registry_url }}/backbone/platform/external/rke2-images/{{ item | regex_replace('^docker.io/', '') }}
+          {{ registry_url }}/{{ registry_rke2_images_path }}/{{ item | regex_replace('^docker.io/', '') }}
       loop: "{{ rke2_images }}"
 
     # Docker login
@@ -63,5 +63,5 @@
       ansible.builtin.command:
         cmd: >-
           docker push
-          {{ registry_url }}/backbone/platform/external/rke2-images/{{ item | regex_replace('^docker.io/', '') }}
+          {{ registry_url }}/{{ registry_rke2_images_path }}/{{ item | regex_replace('^docker.io/', '') }}
       loop: "{{ rke2_images }}"
