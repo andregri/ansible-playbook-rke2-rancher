@@ -92,7 +92,7 @@
 
     - name: Helm login
       ansible.builtin.shell:
-        cmd: helm registry login {{ registry_url }} -u "{{ hostvars['control_plane'][0]['registry_username'] }}" -p "{{ hostvars['control_plane'][0]['registry_password'] }}"
+        cmd: helm registry login {{ registry_url }} -u "{{ hostvars[groups['control_plane'][0]]['registry_username'] }}" -p "{{ hostvars[groups['control_plane'][0]]['registry_password'] }}"
       become: true
       no_log: true
 

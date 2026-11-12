@@ -45,8 +45,8 @@
           configs:
             {{ registry_url }}:
               auth:
-                username: "{{ hostvars['control_plane'][0]['registry_username'] }}"
-                password: "{{ hostvars['control_plane'][0]['registry_password'] }}"
+                username: "{{ hostvars[groups['control_plane'][0]]['registry_username'] }}"
+                password: "{{ hostvars[groups['control_plane'][0]]['registry_password'] }}"
         owner: root
         group: root
         mode: '0644'
