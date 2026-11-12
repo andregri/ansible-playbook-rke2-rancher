@@ -1,7 +1,4 @@
----
-- name: Connect to Azure Key Vault API
-  ansible.builtin.import_playbook: airgapped-prereq/005-connect-to-azure-key-vault-api.yaml
-  
+---  
 - name: Download RKE2 binary and images
   ansible.builtin.import_playbook: airgapped-prereq/010-airgapped-download-images.yaml
 
