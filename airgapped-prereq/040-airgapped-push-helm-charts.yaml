@@ -4,7 +4,7 @@
   hosts: localhost
   connection: local
   become: false
-  var_files:
+  vars_files:
     - "{{ acr_vault_path }}"
   vars:
     registry_chart_path: "helm"

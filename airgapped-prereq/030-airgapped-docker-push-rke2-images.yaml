@@ -4,7 +4,7 @@
   hosts: localhost
   connection: local
   become: false
-  var_files:
+  vars_files:
     - "{{ acr_vault_path }}"
   vars:
     rke2_image_archive: /tmp/rke2-images.linux-amd64.tar.zst
