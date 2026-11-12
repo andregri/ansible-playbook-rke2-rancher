@@ -28,9 +28,9 @@
           - login
           - "{{ registry_url }}"
           - --username
-          - "{{ hostvars[groups['control_plane'][0]]['registry_username'] }}"
+          - "{{ registry_username }}"
           - --password-stdin
-        stdin: "{{ hostvars[groups['control_plane'][0]]['registry_password'] }}"
+        stdin: "{{ registry_password }}"
       no_log: true
       changed_when: false
 

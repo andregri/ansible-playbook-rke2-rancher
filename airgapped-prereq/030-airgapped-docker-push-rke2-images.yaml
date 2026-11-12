@@ -54,8 +54,8 @@
       ansible.builtin.command:
         cmd: >-
           docker login {{ registry_url }}
-          -u "{{ hostvars[groups['control_plane'][0]]['registry_username'] }}"
-          -p "{{ hostvars[groups['control_plane'][0]]['registry_password'] }}"
+          -u "{{ registry_username }}"
+          -p "{{ registry_password }}"
       no_log: true
 
     # Push only images from the RKE2 archive
