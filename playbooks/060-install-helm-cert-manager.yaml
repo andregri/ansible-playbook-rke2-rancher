@@ -27,8 +27,9 @@
 
     - name: Helm login
       ansible.builtin.shell:
-        cmd: helm registry login {{ registry_url }} -u {{ registry_username }} -p {{ registry_password }}
+        cmd: helm registry login {{ registry_url }} -u "{{ hostvars['localhost']['registry_username'] }}" -p "{{ hostvars['localhost']['registry_password'] }}"
       become: true
+      no_log: true
     
     - name: Install cert-manager helm chart
       ansible.builtin.shell:

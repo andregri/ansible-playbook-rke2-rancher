@@ -53,8 +53,9 @@
       ansible.builtin.command:
         cmd: >-
           docker login {{ registry_url }}
-          -u {{ registry_username }}
-          -p {{ registry_password }}
+          -u "{{ hostvars['localhost']['registry_username'] }}"
+          -p "{{ hostvars['localhost']['registry_password'] }}"
+      no_log: true
 
     # Push only images from the RKE2 archive
     - name: Push RKE2 images to private registry
