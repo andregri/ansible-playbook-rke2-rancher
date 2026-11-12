@@ -69,7 +69,8 @@
     ansible.builtin.command:
       argv:
         - /var/lib/rancher/rke2/bin/kubectl
-        - --kubeconfig /etc/rancher/rke2/rke2.yaml
+        - --kubeconfig
+        - /etc/rancher/rke2/rke2.yaml
         - get
         - gitrepository
         - flux-system
@@ -80,7 +81,7 @@
     register: git_status
     retries: 30
     delay: 10
-    until: git_status.stdout == "True"
+    until: git_status.stdout | trim == "True"
     changed_when: false
 
   - name: Display GitRepository status
